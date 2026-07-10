@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProfResults · Lead Finder</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#0e1116;--panel:#161b22;--panel2:#1c232d;--line:#2a323d;
+    --ink:#e6edf3;--dim:#8b98a5;--faint:#5b6672;
+    --acc:#ff7a1a;--steel:#4b9fd6;--green:#3fb950;--red:#f85149;--amber:#d9a441;--purple:#a371f7;--blue:#2f81f7;
+    --mono:'DM Mono',ui-monospace,Menlo,monospace;--sans:'Inter',system-ui,sans-serif;--r:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:22px 20px 90px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--acc),#c85a00);display:grid;place-items:center;font-weight:800;font-size:18px;color:#0e1116}
+  .brand h1{font-size:17px;font-weight:800;letter-spacing:-.02em}
+  .brand .sub{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.05em;text-transform:uppercase}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:18px}
+  .panel h2{font-size:14px;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+  .panel .desc{font-size:12px;color:var(--dim);margin-bottom:14px}
+  label{display:block;font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+  input,select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 11px;font-family:var(--sans);font-size:13px;outline:none}
+  input:focus,select:focus{border-color:var(--acc)}
+  .grid{display:grid;grid-template-columns:1.3fr 1fr .8fr .7fr;gap:12px;align-items:end}
+  @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}}
+  .field{min-width:0}
+  .btn{background:var(--acc);border:0;color:#0e1116;font-weight:700;font-size:13px;padding:10px 16px;border-radius:8px;cursor:pointer;transition:.14s;white-space:nowrap}
+  .btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--dim)} .btn.ghost:hover{color:var(--ink);border-color:var(--acc)}
+  .btn.mini{padding:6px 11px;font-size:12px}
+  .src-toggle{display:inline-flex;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:4px;margin-bottom:14px}
+  .src-toggle button{background:transparent;border:0;color:var(--dim);font-weight:600;font-size:12.5px;padding:7px 13px;border-radius:6px;cursor:pointer}
+  .src-toggle button.on{background:var(--acc);color:#0e1116}
+  .status{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:12px;min-height:16px}
+  .status.err{color:var(--red)} .status.ok{color:var(--green)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;position:relative;overflow:hidden}
+  .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc)}
+  .kpi.green::before{background:var(--green)}.kpi.red::before{background:var(--red)}.kpi.amber::before{background:var(--amber)}.kpi.steel::before{background:var(--steel)}
+  .kpi .lbl{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em}
+  .kpi .val{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:3px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .filterbtns{display:flex;gap:5px;flex-wrap:wrap}
+  .fbtn{background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-size:12px;font-weight:600;padding:6px 11px;border-radius:20px;cursor:pointer}
+  .fbtn.on{background:var(--acc)22;border-color:var(--acc);color:var(--acc)}
+  .spacer{flex:1}
+  .lead{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:11px;display:flex;gap:14px;align-items:flex-start}
+  .lead.hot{border-left:3px solid var(--red)} .lead.warm{border-left:3px solid var(--amber)} .lead.cold{border-left:3px solid var(--faint)}
+  .score{flex:none;width:56px;text-align:center}
+  .score .n{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .score .band{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+  .hot .score .n{color:var(--red)} .warm .score .n{color:var(--amber)} .cold .score .n{color:var(--faint)}
+  .lead .body{flex:1;min-width:0}
+  .lead .nm{font-weight:700;font-size:14.5px}
+  .lead .meta{font-size:12px;color:var(--dim);margin-top:1px}
+  .lead .meta a{color:var(--steel);text-decoration:none} .lead .meta a:hover{text-decoration:underline}
+  .signals{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .sig{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
+  .sig.hot{background:#f8514922;color:var(--red);border-color:#f8514944}
+  .sig.warm{background:#d9a44122;color:var(--amber);border-color:#d9a44144}
+  .sig.info{background:#4b9fd622;color:var(--steel);border-color:#4b9fd644}
+  .sig.warn{background:#f8514918;color:var(--red);border-color:#f8514944}
+  .audits{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .audit{font-size:11px;font-weight:600;padding:4px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);text-decoration:none;cursor:pointer}
+  .audit:hover{color:var(--ink);border-color:var(--acc)}
+  .audit.ads{cursor:pointer;background:#f8514911;border-color:#f8514933;color:var(--red)}
+  .audit.ads.on{background:var(--red);border-color:var(--red);color:#0e1116}
+  .lead .pick{flex:none;align-self:flex-start}
+  .lead .pick input{width:18px;height:18px;accent-color:var(--acc);cursor:pointer}
+  .empty{text-align:center;padding:44px 20px;color:var(--faint)}.empty .big{font-size:34px;margin-bottom:10px}
+  .hint{font-size:11px;color:var(--faint)}
+  .note{background:#4b9fd611;border:1px solid #4b9fd633;border-radius:8px;padding:11px 13px;font-size:12px;color:var(--dim);margin-top:12px}
+  .note b{color:var(--steel)}
+  .keyrow{margin-top:12px}
+  .savebar{position:fixed;bottom:14px;right:16px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:7px 14px;font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px #0008}
+  .savedot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  a{color:var(--acc)}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .viewtoggle{display:inline-flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:5px;margin-bottom:18px}
+  .viewtoggle button{background:transparent;border:0;color:var(--dim);font-weight:600;font-size:13px;padding:8px 15px;border-radius:7px;cursor:pointer}
+  .viewtoggle button.on{background:var(--acc);color:#0e1116}
+  .viewtoggle button b{font-family:var(--mono);opacity:.85}
+  .save-btn{flex:none;align-self:flex-start;background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-size:11px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
+  .save-btn:hover{border-color:var(--acc);color:var(--ink)}
+  .save-btn.saved{background:#3fb95022;border-color:#3fb95044;color:var(--green);cursor:default}
+  .stchip{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:6px;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--dim)}
+  .stchip.new{color:var(--steel);border-color:#4b9fd644;background:#4b9fd611}
+  .stchip.called{color:var(--amber);border-color:#d9a44144;background:#d9a44111}
+  .stchip.interested{color:var(--purple);border-color:#a371f744;background:#a371f711}
+  .stchip.won{color:#0e1116;background:var(--green);border-color:var(--green)}
+  .stchip.dead{color:var(--faint);text-decoration:line-through}
+  .snote{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:7px 9px;font-family:var(--sans);font-size:12px;margin-top:9px;resize:vertical}
+  .modal-bg{position:fixed;inset:0;background:#0008;backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;max-width:560px;width:100%}
+  .mh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+  .mh h3{font-size:16px;font-weight:800}
+  .x{background:transparent;border:0;color:var(--dim);font-size:22px;cursor:pointer;line-height:1}
+  .ofield{margin-bottom:14px}
+  .ofield label{display:flex;align-items:center;gap:10px}
+  .ofield textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:10px 11px;font-family:var(--sans);font-size:13px;line-height:1.5;resize:vertical}
+  .copy{background:var(--panel2);border:1px solid var(--line);color:var(--steel);font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;cursor:pointer;text-transform:none;letter-spacing:0}
+  .copy:hover{border-color:var(--acc);color:var(--ink)}
+  .stchip.callback{color:var(--acc);border-color:#ff7a1a44;background:#ff7a1a11}
+  .callwrap{max-width:680px;margin:0 auto}
+  .callhead{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+  .callprog{flex:1;min-width:180px}
+  .callprog-bar{height:7px;background:var(--panel2);border-radius:10px;overflow:hidden;margin-bottom:5px}
+  .callprog-bar span{display:block;height:100%;background:var(--acc);border-radius:10px;transition:width .3s}
+  .calltally{font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .callcard{text-align:center}
+  .callband{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 12px;border-radius:20px;margin-bottom:12px}
+  .callband.hot{background:#f8514922;color:var(--red)} .callband.warm{background:#d9a44122;color:var(--amber)} .callband.cold{background:var(--panel2);color:var(--faint)}
+  .callname{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+  .callmeta{color:var(--dim);font-size:13.5px;margin-top:4px}
+  .callsignals{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:16px 0}
+  .callphone{display:inline-flex;align-items:center;gap:10px;background:var(--green);color:#0e1116;font-size:26px;font-weight:800;letter-spacing:-.01em;padding:14px 30px;border-radius:14px;text-decoration:none;margin:6px 0 4px;transition:.14s}
+  .callphone:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .callphone.nonum{background:var(--panel2);color:var(--dim);font-size:16px;font-weight:600}
+  .callscript{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:18px 0;text-align:left}
+  .callscript .lab{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+  .callscript .txt{font-size:15px;line-height:1.6}
+  .callbtns{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:6px}
+  .cbtn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:700;padding:14px 10px;border-radius:11px;cursor:pointer;transition:.12s}
+  .cbtn:hover{transform:translateY(-1px)}
+  .cbtn.int{background:#3fb95022;border-color:#3fb95055;color:var(--green)}
+  .cbtn.cb{background:#ff7a1a22;border-color:#ff7a1a55;color:var(--acc)}
+  .cbtn.na{background:var(--panel2);color:var(--dim)}
+  .cbtn.no{background:#f8514918;border-color:#f8514944;color:var(--red)}
+  .cbtn.won{background:var(--green);color:#0e1116;border-color:var(--green)}
+  .callskip{background:transparent;border:0;color:var(--faint);font-size:12.5px;cursor:pointer;margin-top:16px;text-decoration:underline}
+  .callskip:hover{color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo">P</div>
+      <div><h1>ProfResults Lead Finder</h1><div class="sub">Find businesses that need a site + local SEO</div></div>
+    </div>
+    <div class="field" style="max-width:200px"><label>Your name (used in scripts)</label>
+      <input id="myName" placeholder="e.g. Simon" autocomplete="off"></div>
+  </header>
+
+  <div class="viewtoggle" id="viewToggle">
+    <button data-view="call">📞 Call mode</button>
+    <button data-view="find" class="on">🔎 Find leads</button>
+    <button data-view="saved">💾 Saved <b id="savedCount">0</b></button>
+  </div>
+
+  <div id="findView">
+  <div class="panel">
+    <div class="src-toggle" id="srcToggle">
+      <button data-src="osm" class="on">🌍 Free · OpenStreetMap</button>
+      <button data-src="google">⭐ Google Places (API key)</button>
+    </div>
+    <div class="keyrow field" id="keyRow" style="display:none">
+      <label>Google Maps / Places API key</label>
+      <input id="apiKey" placeholder="Paste your key — stays in this browser only" autocomplete="off">
+      <div class="hint" style="margin-top:5px">Enable <b>Places API</b> + <b>Maps JavaScript API</b> in Google Cloud. Richer data (reviews, ratings) but costs per search — you get a $200/mo free credit.</div>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label>Niche / business type</label>
+        <select id="niche"></select>
+      </div>
+      <div class="field">
+        <label>Location (US city, state)</label>
+        <input id="loc" value="Dallas, Texas" placeholder="e.g. Austin, Texas">
+      </div>
+      <div class="field">
+        <label>Radius</label>
+        <select id="radius">
+          <option value="8000">5 miles</option>
+          <option value="16000" selected>10 miles</option>
+          <option value="24000">15 miles</option>
+          <option value="40000">25 miles</option>
+        </select>
+      </div>
+      <div class="field">
+        <button class="btn" id="findBtn" style="width:100%" onclick="findLeads()">Find leads</button>
+      </div>
+    </div>
+    <label style="display:inline-flex;align-items:center;gap:7px;margin-top:12px;text-transform:none;font-family:var(--sans);font-size:12.5px;color:var(--dim);cursor:pointer">
+      <input type="checkbox" id="broaden" style="width:16px;height:16px;accent-color:var(--acc)"> Broaden search (also match business names — more results, some noise)
+    </label>
+    <div class="status" id="status"></div>
+    <div class="note" id="osmNote">
+      <b>Prospecting flow:</b> leads with <b>no website</b> or <b>only a Facebook/social page</b> are auto-flagged hot — they market but have nowhere to send traffic. On any lead, click <b>📢 FB Ad Library</b> to see if they're actively running ads, then hit <b>💸 Mark ads</b> to shoot them to the top. Free OpenStreetMap coverage of US small businesses is patchy — for high volume switch to Google Places. Always <b>🔍 Google</b> a lead before calling to confirm it's real.
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis" style="display:none"></div>
+
+  <div class="panel" id="resultsPanel" style="display:none">
+    <div class="toolbar">
+      <div class="filterbtns" id="filters"></div>
+      <div class="spacer"></div>
+      <button class="btn" onclick="callThese()">📞 Call these</button>
+      <button class="btn ghost mini" onclick="saveAllShown()">💾 Save all shown</button>
+      <button class="btn ghost mini" onclick="selectAll()">Select all</button>
+      <button class="btn ghost mini" onclick="exportCSV()">↓ CSV</button>
+      <button class="btn ghost mini" onclick="exportCRM()">↓ CRM JSON</button>
+    </div>
+    <div id="leadList"></div>
+  </div>
+
+  <div class="panel" id="welcome">
+    <div class="empty">
+      <div class="big">🎯</div>
+      Pick a niche and a US city, then hit <b>Find leads</b>.<br>
+      <span class="hint">Businesses with no website float to the top — those are your fastest sales.</span>
+    </div>
+  </div>
+  </div><!-- /findView -->
+
+  <div id="callView" style="display:none">
+    <div class="panel callwrap">
+      <div class="callhead">
+        <div class="callprog"><div class="callprog-bar"><span id="callBar"></span></div><div class="hint" id="callProg"></div></div>
+        <div class="calltally" id="callTally"></div>
+      </div>
+      <div id="callCard"></div>
+    </div>
+  </div>
+
+  <div id="savedView" style="display:none">
+    <div class="panel">
+      <div class="toolbar">
+        <div><h2 style="margin:0">💾 Saved leads <span class="hint" id="savedSub"></span></h2></div>
+        <div class="spacer"></div>
+        <button class="btn" onclick="startCalling()">📞 Start calling</button>
+        <button class="btn ghost mini" onclick="exportSavedCSV()">↓ Export CSV</button>
+        <button class="btn ghost mini" onclick="exportSavedCRM()">↓ CRM JSON</button>
+        <button class="btn ghost mini" onclick="clearWorked()" title="Remove leads marked Dead or Won">Clear closed</button>
+      </div>
+      <div class="filterbtns" id="savedFilters" style="margin-bottom:12px"></div>
+      <div id="savedList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OUTREACH MODAL -->
+<div class="modal-bg" id="outreachModal">
+  <div class="modal">
+    <div class="mh"><div><h3 id="oName">Outreach</h3><div class="hint" id="oSub"></div></div><button class="x" onclick="closeOutreach()">×</button></div>
+    <div class="ofield"><label>☎ Cold-call opener <button class="copy" onclick="copyText('oCall')">Copy</button></label><textarea id="oCall" rows="6"></textarea></div>
+    <div class="ofield"><label>💬 Text / DM <button class="copy" onclick="copyText('oSms')">Copy</button></label><textarea id="oSms" rows="3"></textarea></div>
+    <div class="ofield"><label>✉️ Email <button class="copy" onclick="copyText('oEmail')">Copy</button></label><textarea id="oEmail" rows="8"></textarea></div>
+    <div class="hint">Scripts are built from this lead's exact weakness. Edit freely — nothing is sent, this is just copy-ready text.</div>
+  </div>
+</div>
+
+<div class="savebar"><span class="savedot"></span><span id="saveMsg">Ready</span></div>
+
+<script>
+// ---------- niche presets: OSM (Overpass) filters + name keywords + Google keyword ----------
+const NICHES=[
+  {g:'— Broad net —',disabled:true},
+  {label:'Any local service business',osm:['craft','shop=car_repair','shop=hairdresser','shop=beauty','office=lawyer','office=construction_company','amenity=dentist','amenity=veterinary','healthcare=chiropractor'],kw:['service','repair','contractor'],gk:'local service business'},
+  {g:'— Construction & trades —',disabled:true},
+  {label:'Roofer',osm:['craft=roofer'],kw:['roof'],gk:'roofing contractor'},
+  {label:'Plumber',osm:['craft=plumber'],kw:['plumb'],gk:'plumber'},
+  {label:'Electrician',osm:['craft=electrician'],kw:['electric'],gk:'electrician'},
+  {label:'HVAC / heating & air',osm:['craft=hvac','craft=heating_engineer'],kw:['hvac','heating','air condition'],gk:'hvac contractor'},
+  {label:'General contractor',osm:['office=construction_company','craft=builder'],kw:['construction','contractor','builder','remodel'],gk:'general contractor'},
+  {label:'Painter',osm:['craft=painter'],kw:['paint'],gk:'painter'},
+  {label:'Carpenter',osm:['craft=carpenter'],kw:['carpentr','carpenter','woodwork'],gk:'carpenter'},
+  {label:'Concrete / masonry',osm:['craft=stonemason','craft=plasterer'],kw:['concrete','mason','paving'],gk:'concrete contractor'},
+  {label:'Landscaper',osm:['craft=gardener','shop=garden_centre'],kw:['landscap','lawn','tree service'],gk:'landscaper'},
+  {label:'Fencing',osm:['craft=fence'],kw:['fenc'],gk:'fence contractor'},
+  {label:'Flooring',osm:['craft=floorer','shop=flooring'],kw:['floor'],gk:'flooring contractor'},
+  {g:'— Service businesses —',disabled:true},
+  {label:'Auto repair',osm:['shop=car_repair'],kw:['auto','mechanic','collision'],gk:'auto repair'},
+  {label:'Dentist',osm:['amenity=dentist','healthcare=dentist'],kw:['dental','dentist'],gk:'dentist'},
+  {label:'Lawyer / attorney',osm:['office=lawyer'],kw:['law','attorney','legal'],gk:'lawyer'},
+  {label:'Salon / barber',osm:['shop=hairdresser','shop=beauty'],kw:['salon','barber','hair','beauty'],gk:'hair salon'},
+  {label:'Med spa / skincare',osm:['shop=beauty','healthcare=cosmetic'],kw:['med spa','skincare','aesthetic','botox'],gk:'medical spa'},
+  {label:'Chiropractor',osm:['healthcare=chiropractor'],kw:['chiro'],gk:'chiropractor'},
+  {label:'Locksmith',osm:['craft=locksmith','shop=locksmith'],kw:['locksmith','lock & key'],gk:'locksmith'},
+  {label:'Pest control',osm:['craft=pest_control'],kw:['pest','exterminat'],gk:'pest control'},
+  {label:'Cleaning service',osm:['shop=laundry','craft=cleaning'],kw:['clean','janitorial','maid'],gk:'cleaning service'},
+  {label:'Moving company',osm:['shop=moving','office=moving_company'],kw:['moving','movers'],gk:'moving company'},
+  {label:'Veterinarian',osm:['amenity=veterinary'],kw:['vet','animal hospital'],gk:'veterinarian'},
+  {g:'— Custom —',disabled:true},
+  {label:'Custom keyword…',custom:true},
+];
+
+// ---------- state ----------
+let LEADS=[],curFilter='all',savedFilter='all';
+const SETTINGS_KEY='pr_leadfinder_apikey';
+const SAVED_KEY='pr_leadfinder_saved',NAME_KEY='pr_leadfinder_name';
+const STATUSES=['new','called','callback','interested','won','dead'];
+function loadSaved(){try{return JSON.parse(localStorage.getItem(SAVED_KEY)||'[]');}catch(e){return[];}}
+function persistSaved(){try{localStorage.setItem(SAVED_KEY,JSON.stringify(SAVED));}catch(e){}}
+let SAVED=loadSaved();
+const leadKey=l=>((l.name||'')+'|'+(l.phone||'')).toLowerCase().trim();
+const isSaved=l=>SAVED.some(s=>leadKey(s)===leadKey(l));
+const myName=()=>document.getElementById('myName').value.trim()||'me';
+
+// ---------- init ----------
+(function(){
+  const sel=document.getElementById('niche');
+  NICHES.forEach((n,i)=>{
+    if(n.disabled){const o=document.createElement('option');o.textContent=n.g;o.disabled=true;sel.appendChild(o);return;}
+    const o=document.createElement('option');o.value=i;o.textContent=n.label;sel.appendChild(o);
+  });
+  const def=NICHES.findIndex(n=>n.label==='Roofer');sel.value=def>=0?def:1;
+  try{const k=localStorage.getItem(SETTINGS_KEY);if(k)document.getElementById('apiKey').value=k;}catch(e){}
+  try{const nm=localStorage.getItem(NAME_KEY);if(nm)document.getElementById('myName').value=nm;}catch(e){}
+  document.getElementById('myName').addEventListener('input',e=>{try{localStorage.setItem(NAME_KEY,e.target.value);}catch(_){}});
+  document.getElementById('savedCount').textContent=SAVED.length;
+  renderSaved();
+})();
+
+// ---------- view toggle (Call / Find / Saved) ----------
+function switchView(v){
+  document.querySelectorAll('#viewToggle button').forEach(x=>x.classList.toggle('on',x.dataset.view===v));
+  document.getElementById('findView').style.display=v==='find'?'block':'none';
+  document.getElementById('savedView').style.display=v==='saved'?'block':'none';
+  document.getElementById('callView').style.display=v==='call'?'block':'none';
+  if(v==='saved')renderSaved();
+  if(v==='call')startCalling();
+}
+document.getElementById('viewToggle').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;switchView(b.dataset.view);
+});
+
+document.getElementById('srcToggle').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#srcToggle button').forEach(x=>x.classList.toggle('on',x===b));
+  const g=b.dataset.src==='google';
+  document.getElementById('keyRow').style.display=g?'block':'none';
+  document.getElementById('osmNote').style.display=g?'none':'block';
+});
+function curSource(){return document.querySelector('#srcToggle button.on').dataset.src;}
+
+function setStatus(msg,cls){const el=document.getElementById('status');el.className='status'+(cls?' '+cls:'');el.innerHTML=msg;}
+function flash(msg){document.getElementById('saveMsg').textContent=msg;}
+
+// ---------- geocoding (Nominatim, free) ----------
+async function geocode(q){
+  const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
+  const r=await fetch(url,{headers:{'Accept':'application/json'}});
+  if(!r.ok)throw new Error('Geocoder returned '+r.status);
+  const d=await r.json();
+  if(!d.length)throw new Error('Couldn’t find that location. Try "City, State".');
+  return {lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name};
+}
+
+// ---------- OSM / Overpass search ----------
+function buildOverpass(niche,lat,lon,radius,broaden){
+  const parts=[];
+  const around=`(around:${radius},${lat},${lon})`;
+  (niche.osm||[]).forEach(f=>{
+    let sel;
+    if(f.includes('=')){const [k,v]=f.split('=');sel=`["${k}"="${v}"]`;}
+    else sel=`["${f}"]`; // existence filter, e.g. any craft
+    parts.push(`node${sel}${around};`);
+    parts.push(`way${sel}${around};`);
+  });
+  if(broaden&&niche.kw){
+    const rx=niche.kw.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    // named POIs that are some kind of business/place and match the keyword
+    parts.push(`node["name"~"${rx}",i][~"^(craft|shop|office|amenity|healthcare|building|company)$"~"."]${around};`);
+    parts.push(`way["name"~"${rx}",i][~"^(craft|shop|office|amenity|healthcare|building|company)$"~"."]${around};`);
+  }
+  return `[out:json][timeout:30];(${parts.join('')});out center tags 250;`;
+}
+async function searchOSM(niche,lat,lon,radius,broaden){
+  const q=buildOverpass(niche,lat,lon,radius,broaden);
+  const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+  let lastErr;
+  for(const ep of endpoints){
+    try{
+      const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q)});
+      if(!r.ok)throw new Error('Overpass '+r.status);
+      const d=await r.json();
+      return (d.elements||[]).map(e=>{
+        const t=e.tags||{};
+        const website=t.website||t['contact:website']||t.url||'';
+        const social=t['contact:facebook']||t.facebook||t['contact:instagram']||t.instagram||'';
+        return {
+          name:t.name||t['name:en']||'',
+          phone:t.phone||t['contact:phone']||t['phone:US']||'',
+          website:website,social:social,
+          city:t['addr:city']||'',
+          address:[t['addr:housenumber'],t['addr:street']].filter(Boolean).join(' '),
+          niche:document.getElementById('niche').selectedOptions[0].textContent,
+          rating:null,reviews:null,
+          lat:e.lat||(e.center&&e.center.lat),lon:e.lon||(e.center&&e.center.lon),
+          source:'OpenStreetMap',
+        };
+      }).filter(b=>b.name);
+    }catch(err){lastErr=err;}
+  }
+  throw lastErr||new Error('Overpass unreachable');
+}
+
+// ---------- Google Places search ----------
+let gmapsLoaded=null;
+function loadGoogle(key){
+  if(gmapsLoaded)return gmapsLoaded;
+  gmapsLoaded=new Promise((res,rej)=>{
+    window.__gcb=()=>res();
+    const s=document.createElement('script');
+    s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&libraries=places&callback=__gcb';
+    s.onerror=()=>rej(new Error('Failed to load Google Maps — check the key & that Maps JavaScript API is enabled.'));
+    document.head.appendChild(s);
+  });
+  return gmapsLoaded;
+}
+async function searchGoogle(niche,loc,key){
+  await loadGoogle(key);
+  const svc=new google.maps.places.PlacesService(document.createElement('div'));
+  const query=(niche.gk||niche.label)+' in '+loc;
+  const results=await new Promise((res,rej)=>{
+    svc.textSearch({query},(r,status)=>{
+      if(status==='OK'||status==='ZERO_RESULTS')res(r||[]);
+      else rej(new Error('Google Places: '+status));
+    });
+  });
+  const out=[];
+  for(const p of results.slice(0,30)){
+    const det=await new Promise(res=>{
+      svc.getDetails({placeId:p.place_id,fields:['name','formatted_phone_number','website','formatted_address','rating','user_ratings_total','business_status']},
+        (d,st)=>res(st==='OK'?d:null));
+    }).catch(()=>null);
+    const d=det||p;
+    if(d.business_status&&d.business_status!=='OPERATIONAL')continue;
+    out.push({
+      name:d.name||p.name||'',phone:d.formatted_phone_number||'',website:d.website||'',
+      city:(d.formatted_address||'').split(',').slice(-3,-2)[0]?.trim()||'',
+      address:(d.formatted_address||'').split(',')[0]||'',
+      niche:document.getElementById('niche').selectedOptions[0].textContent,
+      social:'',rating:d.rating??null,reviews:d.user_ratings_total??null,source:'Google Places',
+    });
+  }
+  return out.filter(b=>b.name);
+}
+
+// ---------- website classification: catches "on Facebook, no real site" prospects ----------
+function classifySite(url,social){
+  const u=(url||'').toLowerCase();
+  if(!u)return social?'social':'none';
+  if(/facebook\.com|instagram\.com|fb\.me|fb\.com|linktr\.ee|linktree|beacons\.ai|linkin\.bio|carrd\.co/.test(u))return 'social';
+  if(/business\.site|sites\.google\.com|godaddysites\.com|wixsite\.com|\.wix\.com|weebly\.com|square\.site|myshopify\.com|wordpress\.com|blogspot\.|yolasite\.com|webnode\.|jimdosite\.com|strikingly\.com|booksy\.com|vagaro\.com|glossgenius/.test(u))return 'diy';
+  return 'real';
+}
+// ---------- scoring: higher = hotter lead (from the playbook's easy-win signals) ----------
+function scoreLead(b){
+  let s=0;const sig=[];
+  const kind=classifySite(b.website,b.social);b.siteKind=kind;
+  if(kind==='none'){s+=60;sig.push(['hot','🔥 No website — sell a $425 site']);}
+  else if(kind==='social'){s+=52;sig.push(['hot','🔥 Only a Facebook/social page — no real site']);}
+  else if(kind==='diy'){s+=35;sig.push(['warm','DIY/free site — easy rebuild + SEO']);}
+  else{s+=12;sig.push(['info','Has site — audit for SEO retainer']);}
+  if(b.social&&kind!=='social')sig.push(['info','On Facebook/IG']);
+  if(b._ads){s+=25;sig.push(['hot','💸 Running paid ads — prime prospect']);}
+  if(b.reviews!=null){
+    if(b.reviews===0){s+=14;sig.push(['warm','0 reviews — weak GBP']);}
+    else if(b.reviews<10){s+=16;sig.push(['warm',b.reviews+' reviews — thin GBP']);}
+    else if(b.reviews<25){s+=7;sig.push(['warm',b.reviews+' reviews']);}
+    else sig.push(['info',b.reviews+' reviews']);
+    if(b.rating!=null&&b.rating<4.0&&b.reviews>0){s+=6;sig.push(['warm',b.rating.toFixed(1)+'★ rating']);}
+  }
+  if(!b.phone){s+=5;sig.push(['info','No phone listed']);}
+  const spam=isSpammyName(b.name);b.spam=spam;
+  if(spam){s-=25;sig.push(['warn','⚠ Keyword-stuffed name — possible fake GBP']);}
+  s=Math.max(0,Math.min(100,s));
+  let band=s>=60?'hot':s>=35?'warm':'cold';
+  if((kind==='none'||kind==='social')&&!spam)band='hot'; // no real website = always a hot lead
+  if(spam)band='cold';
+  return {score:s,band,signals:sig,siteKind:kind,spam};
+}
+// keyword-stuffed / ALL-CAPS / "near me" names are usually rank-and-rent fakes (playbook: blackhat)
+function isSpammyName(n){
+  if(!n)return false;
+  const words=n.trim().split(/\s+/);
+  const letters=n.replace(/[^A-Za-z]/g,'');
+  const allCaps=letters.length>6&&letters===letters.toUpperCase();
+  const nearMe=/\bnear me\b/i.test(n);
+  const stuffed=words.length>=6&&/[-|\/•·>]/.test(n);
+  return nearMe||(allCaps&&words.length>=4)||stuffed;
+}
+
+// ---------- main ----------
+async function findLeads(){
+  const btn=document.getElementById('findBtn');btn.disabled=true;
+  const niche=NICHES[+document.getElementById('niche').value];
+  const loc=document.getElementById('loc').value.trim();
+  const radius=+document.getElementById('radius').value;
+  const broaden=document.getElementById('broaden').checked;
+  const src=curSource();
+  if(niche&&niche.custom){
+    const kw=prompt('Enter a keyword to search business names for (e.g. "tree service"):');
+    if(!kw){btn.disabled=false;return;}
+    niche.kw=[kw.toLowerCase()];niche.gk=kw;niche.osm=[];
+  }
+  if(!loc){setStatus('Enter a location first.','err');btn.disabled=false;return;}
+  try{
+    let list;
+    if(src==='google'){
+      const key=document.getElementById('apiKey').value.trim();
+      if(!key){setStatus('Paste your Google API key, or switch to the free source.','err');btn.disabled=false;return;}
+      try{localStorage.setItem(SETTINGS_KEY,key);}catch(e){}
+      setStatus('<span class="spin"></span>Searching Google Places for '+niche.label+' in '+loc+'…');
+      list=await searchGoogle(niche,loc,key);
+    }else{
+      setStatus('<span class="spin"></span>Locating '+loc+'…');
+      const geo=await geocode(loc);
+      setStatus('<span class="spin"></span>Scanning OpenStreetMap around '+geo.name.split(',')[0]+'…');
+      list=await searchOSM(niche,geo.lat,geo.lon,radius,broaden);
+    }
+    // de-dupe by name+phone
+    const seen=new Set();
+    list=list.filter(b=>{const k=(b.name+'|'+b.phone).toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});
+    // skip leads already closed (Won/Dead) in the saved list
+    const closed=new Set(SAVED.filter(s=>s.status==='won'||s.status==='dead').map(leadKey));
+    const skipped=list.length;
+    list=list.filter(b=>!closed.has(leadKey(b)));
+    const nSkip=skipped-list.length;
+    LEADS=list.map(b=>({...b,...scoreLead(b)})).sort((a,b)=>b.score-a.score);
+    if(!LEADS.length){setStatus('No businesses found. Try a bigger radius, the "broaden" checkbox, or switch source.','err');}
+    else setStatus('Found '+LEADS.length+' businesses · sorted hottest first.'+(nSkip?' ('+nSkip+' closed lead'+(nSkip>1?'s':'')+' skipped)':''),'ok');
+    curFilter='all';renderAll();
+  }catch(err){
+    setStatus('⚠ '+err.message,'err');
+  }finally{btn.disabled=false;}
+}
+
+// ---------- render ----------
+function renderAll(){renderKPIs();renderFilters();renderList();
+  document.getElementById('welcome').style.display=LEADS.length?'none':'block';
+  document.getElementById('kpis').style.display=LEADS.length?'grid':'none';
+  document.getElementById('resultsPanel').style.display=LEADS.length?'block':'none';
+  document.getElementById('savedCount').textContent=SAVED.length;
+  renderSaved();}
+function fcount(){
+  return {
+    all:LEADS.length,
+    hot:LEADS.filter(l=>l.band==='hot').length,
+    nosite:LEADS.filter(l=>l.siteKind==='none').length,
+    social:LEADS.filter(l=>l.siteKind==='social').length,
+    running:LEADS.filter(l=>l._ads).length,
+    site:LEADS.filter(l=>l.siteKind==='real'||l.siteKind==='diy').length,
+  };
+}
+function renderKPIs(){
+  const c=fcount();
+  const noReal=c.nosite+c.social;
+  const K=[
+    ['Leads found',LEADS.length,''],
+    ['🔥 Hot',c.hot,'red'],
+    ['No real site',noReal,'amber'],
+    ['💸 Running ads',c.running,'red'],
+    ['Potential site $',('$'+(noReal*425).toLocaleString()),'green'],
+  ];
+  document.getElementById('kpis').innerHTML=K.map(([l,v,cl])=>`<div class="kpi ${cl}"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
+}
+function renderFilters(){
+  const counts=fcount();
+  const F=[['all','All'],['hot','🔥 Hot'],['nosite','No site'],['social','Social-only'],['running','💸 Running ads'],['site','Has site']];
+  document.getElementById('filters').innerHTML=F.map(([k,l])=>`<button class="fbtn ${curFilter===k?'on':''}" onclick="setFilter('${k}')">${l} <b>${counts[k]}</b></button>`).join('');
+}
+function setFilter(f){curFilter=f;renderFilters();renderList();}
+function shown(){
+  return LEADS.filter(l=>{
+    if(curFilter==='all')return true;
+    if(curFilter==='nosite')return l.siteKind==='none';
+    if(curFilter==='social')return l.siteKind==='social';
+    if(curFilter==='running')return !!l._ads;
+    if(curFilter==='site')return l.siteKind==='real'||l.siteKind==='diy';
+    return l.band===curFilter;
+  });
+}
+function gsearch(q){return 'https://www.google.com/search?q='+encodeURIComponent(q);}
+function domainOf(url){try{return new URL(url).hostname.replace(/^www\./,'');}catch(e){return url;}}
+function renderList(){
+  const list=shown();
+  const el=document.getElementById('leadList');
+  if(!list.length){el.innerHTML='<div class="empty">No leads in this filter.</div>';return;}
+  el.innerHTML=list.map((l,i)=>{
+    const idx=LEADS.indexOf(l);
+    const loc=[l.city].filter(Boolean).join(', ')||document.getElementById('loc').value;
+    const q=l.name+' '+loc;
+    const fbAds=`https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=US&media_type=all&q=${encodeURIComponent(l.name)}&search_type=keyword_unordered`;
+    const gAds=`https://adstransparency.google.com/?region=US&query=${encodeURIComponent(l.name)}`;
+    const audits=[
+      `<span class="audit ads ${l._ads?'on':''}" onclick="toggleAds(${idx})">${l._ads?'✓ Running ads':'💸 Mark ads'}</span>`,
+      `<a class="audit" href="${fbAds}" target="_blank" rel="noopener">📢 FB Ad Library</a>`,
+      `<a class="audit" href="${gAds}" target="_blank" rel="noopener">🅶 Google Ads</a>`,
+      `<a class="audit" href="${gsearch(q)}" target="_blank" rel="noopener">🔍 Google</a>`,
+      `<a class="audit" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener">🗺️ GBP/Maps</a>`,
+    ];
+    const kind=l.siteKind;
+    const socialUrl=l.social||(kind==='social'?l.website:'');
+    if(socialUrl)audits.push(`<a class="audit" href="${socialUrl.startsWith('http')?socialUrl:'https://'+socialUrl.replace(/^\/+/,'')}" target="_blank" rel="noopener">📘 Social page</a>`);
+    if(kind==='real'||kind==='diy'){const dom=domainOf(l.website);
+      audits.push(`<a class="audit" href="${l.website.startsWith('http')?l.website:'https://'+l.website}" target="_blank" rel="noopener">🌐 Site</a>`);
+      audits.push(`<a class="audit" href="${gsearch('site:'+dom)}" target="_blank" rel="noopener">📄 Indexed pages</a>`);
+      audits.push(`<a class="audit" href="https://validator.schema.org/#url=${encodeURIComponent(l.website)}" target="_blank" rel="noopener">🏷️ Schema</a>`);
+      audits.push(`<a class="audit" href="https://pagespeed.web.dev/report?url=${encodeURIComponent(l.website)}" target="_blank" rel="noopener">⚡ PageSpeed</a>`);
+    }else{
+      audits.push(`<a class="audit" href="${gsearch(q+' website')}" target="_blank" rel="noopener">❓ Confirm no site</a>`);
+    }
+    audits.push(`<span class="audit" onclick="openOutreach('res',${idx})">✍ Script</span>`);
+    const phone=l.phone?`<a href="tel:${l.phone.replace(/[^0-9+]/g,'')}">${l.phone}</a>`:'<span class="hint">no phone</span>';
+    const saved=isSaved(l);
+    return `<div class="lead ${l.band}">
+      <div class="score"><div class="n">${l.score}</div><div class="band">${l.band}</div></div>
+      <div class="body">
+        <div class="nm">${esc(l.name)}</div>
+        <div class="meta">${esc(l.niche)}${loc?' · '+esc(loc):''} · ${phone} · <span class="hint">${l.source}</span></div>
+        <div class="signals">${l.signals.map(([c,t])=>`<span class="sig ${c}">${t}</span>`).join('')}</div>
+        <div class="audits">${audits.join('')}</div>
+      </div>
+      <div class="pick" style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <button class="save-btn ${saved?'saved':''}" ${saved?'disabled':''} onclick="saveOne(${idx})">${saved?'✓ Saved':'💾 Save'}</button>
+        <input type="checkbox" data-i="${idx}" ${l._pick?'checked':''} onchange="togglePick(${idx},this.checked)">
+      </div>
+    </div>`;
+  }).join('');
+}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function togglePick(i,v){LEADS[i]._pick=v;}
+function toggleAds(i){const l=LEADS[i];l._ads=!l._ads;Object.assign(l,scoreLead(l));LEADS.sort((a,b)=>b.score-a.score);renderAll();flash(l._ads?'💸 Marked as running ads':'Unmarked');}
+function selectAll(){shown().forEach(l=>l._pick=true);renderList();flash('Selected '+shown().length+' leads');}
+
+// ---------- saved leads (persist in browser) ----------
+function saveOne(idx){
+  const l=LEADS[idx];if(isSaved(l))return;
+  const {_pick,...rest}=l;
+  SAVED.unshift({...rest,status:'new',notes:'',savedAt:Date.now()});
+  persistSaved();renderAll();flash('💾 Saved '+l.name+' ('+SAVED.length+' total)');
+}
+function saveAllShown(){
+  let n=0;shown().forEach(l=>{if(!isSaved(l)){const{_pick,...rest}=l;SAVED.unshift({...rest,status:'new',notes:'',savedAt:Date.now()});n++;}});
+  persistSaved();renderAll();flash('💾 Saved '+n+' new leads ('+SAVED.length+' total)');
+}
+function removeSaved(k){SAVED=SAVED.filter(s=>leadKey(s)!==k);persistSaved();renderAll();}
+function cycleStatus(k){const s=SAVED.find(x=>leadKey(x)===k);if(!s)return;
+  s.status=STATUSES[(STATUSES.indexOf(s.status)+1)%STATUSES.length];persistSaved();renderSaved();
+  document.getElementById('savedCount').textContent=SAVED.length;}
+function saveNote(k,v){const s=SAVED.find(x=>leadKey(x)===k);if(s){s.notes=v;persistSaved();}}
+function clearWorked(){const before=SAVED.length;SAVED=SAVED.filter(s=>s.status!=='dead'&&s.status!=='won');persistSaved();renderAll();flash('Cleared '+(before-SAVED.length)+' closed leads');}
+function savedCounts(){const c={all:SAVED.length};STATUSES.forEach(st=>c[st]=SAVED.filter(s=>s.status===st).length);return c;}
+function setSavedFilter(f){savedFilter=f;renderSaved();}
+function renderSaved(){
+  const list=document.getElementById('savedList');if(!list)return;
+  document.getElementById('savedCount').textContent=SAVED.length;
+  const c=savedCounts();
+  document.getElementById('savedSub').textContent=SAVED.length?`· ${c.new} new, ${c.called} called, ${c.interested} interested, ${c.won} won`:'';
+  const F=[['all','All']].concat(STATUSES.map(s=>[s,s[0].toUpperCase()+s.slice(1)]));
+  document.getElementById('savedFilters').innerHTML=F.map(([k,l])=>`<button class="fbtn ${savedFilter===k?'on':''}" onclick="setSavedFilter('${k}')">${l} <b>${c[k]||0}</b></button>`).join('');
+  const rows=SAVED.filter(s=>savedFilter==='all'||s.status===savedFilter);
+  if(!rows.length){list.innerHTML=`<div class="empty"><div class="big">💾</div>${SAVED.length?'None with this status.':'No saved leads yet. Find leads, then hit 💾 Save.'}</div>`;return;}
+  list.innerHTML=rows.map(s=>{
+    const k=leadKey(s);const loc=s.city||'';const q=s.name+' '+loc;
+    const phone=s.phone?`<a href="tel:${s.phone.replace(/[^0-9+]/g,'')}">${s.phone}</a>`:'<span class="hint">no phone</span>';
+    return `<div class="lead ${s.band||'cold'}">
+      <div class="score" style="width:auto"><button class="stchip ${s.status}" onclick="cycleStatus('${k}')" title="Click to advance">${s.status.toUpperCase()}</button></div>
+      <div class="body">
+        <div class="nm">${esc(s.name)}</div>
+        <div class="meta">${esc(s.niche||'')}${loc?' · '+esc(loc):''} · ${phone}</div>
+        <div class="signals">${(s.signals||[]).map(([c,t])=>`<span class="sig ${c}">${t}</span>`).join('')}</div>
+        <div class="audits">
+          <span class="audit" onclick="openOutreach('saved','${k}')">✍ Script</span>
+          <a class="audit" href="tel:${(s.phone||'').replace(/[^0-9+]/g,'')}">☎ Call</a>
+          <a class="audit" href="${gsearch(q)}" target="_blank" rel="noopener">🔍 Google</a>
+          <a class="audit" href="https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=US&media_type=all&q=${encodeURIComponent(s.name)}&search_type=keyword_unordered" target="_blank" rel="noopener">📢 FB Ads</a>
+        </div>
+        <textarea class="snote" rows="1" placeholder="Notes — call outcome, callback time…" oninput="saveNote('${k}',this.value)">${esc(s.notes||'')}</textarea>
+      </div>
+      <div class="pick"><button class="save-btn" onclick="removeSaved('${k}')" title="Remove">✕</button></div>
+    </div>`;
+  }).join('');
+}
+
+// ---------- outreach generator (free, template-based, tailored to the weakness) ----------
+function weaknessLine(l){
+  if(l.siteKind==='none')return "don't have a website";
+  if(l.siteKind==='social')return "are running off just a Facebook page with no real website";
+  if(l.siteKind==='diy')return "only have a basic template site";
+  return "have a site that isn't showing up on Google";
+}
+function buildOutreach(l){
+  const me=myName();const nm=l.name;const niche=(l.niche||'business').replace(/\s*\(.*/,'').toLowerCase();
+  const w=weaknessLine(l);const ads=l._ads;
+  const adsBit=ads?" I also noticed you're running some Facebook ads — so you're paying for clicks but they've got nowhere solid to land, which means you're leaving money on the table." : "";
+  const fewRev=(l.reviews!=null&&l.reviews<25);
+  const revBit=fewRev?` A few more Google reviews and a proper site and you'd be hard to beat locally.`:'';
+  const call=`Hey, is this the owner of ${nm}? This is ${me} — I'll keep it to 20 seconds. I came across ${nm} and noticed you ${w}.${adsBit} I build local ${niche} businesses a clean website that actually ranks on Google and turns searches into phone calls — first one's just $425.${revBit} Quick question: what are you doing right now to get found when someone Googles a ${niche} in your area?`;
+  const sms=`Hi ${nm} — this is ${me}. Noticed you ${w}. I build ${niche}s a $425 site that ranks on Google and brings in calls. Worth a 5-min chat this week?`;
+  const email=`Subject: Quick note about ${nm} showing up on Google\n\nHi,\n\nI came across ${nm} and noticed you ${w}.${adsBit}\n\nI help local ${niche} businesses get found on Google — a clean, fast website (from $425) plus the local SEO that puts you in the map results when people search nearby. Most of my clients start getting calls from Google within a few weeks.${revBit}\n\nIf you're open to it, I can show you exactly where you're losing customers right now — no charge, no pressure. Just reply or call me.\n\nThanks,\n${me}`;
+  return {call,sms,email};
+}
+function openOutreach(kind,ref){
+  const l=kind==='saved'?SAVED.find(s=>leadKey(s)===ref):LEADS[ref];
+  if(!l)return;
+  const o=buildOutreach(l);
+  document.getElementById('oName').textContent='✍ Outreach — '+l.name;
+  document.getElementById('oSub').textContent='Tailored to: '+weaknessLine(l);
+  document.getElementById('oCall').value=o.call;
+  document.getElementById('oSms').value=o.sms;
+  document.getElementById('oEmail').value=o.email;
+  document.getElementById('outreachModal').classList.add('open');
+}
+function closeOutreach(){document.getElementById('outreachModal').classList.remove('open');}
+function copyText(id){const el=document.getElementById(id);el.select();
+  try{navigator.clipboard.writeText(el.value);}catch(e){document.execCommand('copy');}
+  flash('Copied to clipboard');}
+document.getElementById('outreachModal').addEventListener('click',e=>{if(e.target.id==='outreachModal')closeOutreach();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOutreach();});
+
+// ---------- CALL MODE: one qualified lead at a time ----------
+let CALLQ=[],CALLI=0,callSess={calls:0,wins:0},currentCall='';
+function openLeads(){return SAVED.filter(s=>['new','called','callback','interested'].includes(s.status)).sort((a,b)=>(b.score||0)-(a.score||0));}
+function startCalling(){CALLQ=openLeads().map(leadKey);CALLI=0;callSess={calls:0,wins:0};renderCall();}
+function callThese(){saveAllShown();switchView('call');}
+function renderCall(){
+  const card=document.getElementById('callCard');if(!card)return;
+  while(CALLI<CALLQ.length&&!SAVED.some(s=>leadKey(s)===CALLQ[CALLI]))CALLI++;
+  const total=CALLQ.length;
+  document.getElementById('callProg').textContent=total?('Lead '+Math.min(CALLI+1,total)+' of '+total):'';
+  document.getElementById('callBar').style.width=total?Math.round(Math.min(CALLI,total)/total*100)+'%':'0%';
+  document.getElementById('callTally').innerHTML='☎ '+callSess.calls+' worked · 🎉 '+callSess.wins+' sold this session';
+  if(!total){card.innerHTML=`<div class="empty"><div class="big">📞</div>No qualified leads queued.<br><span class="hint">Go to <b>🔎 Find leads</b>, save the hot ones, then come back — or hit <b>📞 Call these</b> right on the results.</span></div>`;return;}
+  if(CALLI>=total){card.innerHTML=`<div class="empty"><div class="big">✅</div>All caught up — you worked ${callSess.calls} lead${callSess.calls===1?'':'s'} this session.<br><span class="hint">${callSess.wins?('🎉 '+callSess.wins+' sold — nice work.'):'Find more leads, or check your callbacks under 💾 Saved.'}</span></div>`;return;}
+  const l=SAVED.find(s=>leadKey(s)===CALLQ[CALLI]);
+  currentCall=buildOutreach(l).call;
+  const loc=l.city||'';
+  const phone=l.phone?`<a class="callphone" href="tel:${l.phone.replace(/[^0-9+]/g,'')}">☎ ${esc(l.phone)}</a>`
+    :`<a class="callphone nonum" href="${gsearch(l.name+' '+loc+' phone number')}" target="_blank" rel="noopener">🔍 No number listed — look it up</a>`;
+  card.innerHTML=`<div class="callcard">
+    <div class="callband ${l.band||'cold'}">${(l.band||'cold')} lead · score ${l.score||0}</div>
+    <div class="callname">${esc(l.name)}</div>
+    <div class="callmeta">${esc(l.niche||'')}${loc?' · '+esc(loc):''}</div>
+    <div class="callsignals">${(l.signals||[]).map(([c,t])=>`<span class="sig ${c}">${t}</span>`).join('')}</div>
+    ${phone}
+    <div class="callscript"><div class="lab">Open with this <button class="copy" onclick="copyCall()">Copy</button></div><div class="txt">${esc(currentCall)}</div></div>
+    <div class="callbtns">
+      <button class="cbtn int" onclick="callOutcome('interested')">🔥 Interested</button>
+      <button class="cbtn cb" onclick="callOutcome('callback')">↺ Callback</button>
+      <button class="cbtn na" onclick="callOutcome('called')">📵 No answer</button>
+      <button class="cbtn no" onclick="callOutcome('dead')">🚫 Not interested</button>
+      <button class="cbtn won" onclick="callOutcome('won')">🎉 Sold!</button>
+    </div>
+    <button class="callskip" onclick="callSkip()">Skip for now →</button>
+  </div>`;
+}
+function callOutcome(status){
+  const l=SAVED.find(s=>leadKey(s)===CALLQ[CALLI]);
+  if(l){l.status=status;l.lastCallDate=today();persistSaved();}
+  callSess.calls++;if(status==='won')callSess.wins++;
+  document.getElementById('savedCount').textContent=SAVED.length;
+  CALLI++;renderCall();
+}
+function callSkip(){CALLI++;renderCall();}
+function copyCall(){try{navigator.clipboard.writeText(currentCall);}catch(e){}flash('Script copied');}
+
+// ---------- exports ----------
+function picked(){const p=LEADS.filter(l=>l._pick);return p.length?p:LEADS;}
+function notesFor(l){const sigNote=(l.signals||[]).map(s=>s[1].replace(/^[^\w]+/,'')).join('; ');
+  const parts=[sigNote];if(l.status)parts.push('status: '+l.status);if(l.notes)parts.push(l.notes);return parts.filter(Boolean).join(' — ');}
+function rowsToCSV(rows,name){
+  const cols=['name','owner','phone','city','niche','source','stage','webPrice','deposit','retainer','notes'];
+  const e=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+  const csv=[cols.join(',')].concat(rows.map(l=>[l.name,'',l.phone,l.city,l.niche,'Lead Finder','new',425,0,0,notesFor(l)].map(e).join(','))).join('\n');
+  dl(new Blob([csv],{type:'text/csv'}),name);
+}
+function rowsToCRM(rows,name){
+  const uid=()=>'l'+Math.random().toString(36).slice(2,8);
+  const leads=rows.map(l=>({id:uid(),name:l.name,owner:'',phone:l.phone,city:l.city,niche:l.niche,
+    source:'Lead Finder',stage:'new',webPrice:425,deposit:0,retainer:0,notes:notesFor(l)}));
+  const snap={app:'profresults',version:1,exportedAt:new Date().toISOString(),leads,calls:[],builds:{},
+    clicker:{date:'',count:0,streak:0,lastDay:''}};
+  dl(new Blob([JSON.stringify(snap,null,2)],{type:'application/json'}),name);
+}
+const today=()=>new Date().toISOString().slice(0,10);
+function exportCSV(){const r=picked();rowsToCSV(r,'profresults_leads_'+today()+'.csv');flash('Exported '+r.length+' leads to CSV');}
+function exportCRM(){const r=picked();rowsToCRM(r,'profresults_leads_'+today()+'.json');flash('Exported '+r.length+' leads as CRM JSON');}
+function exportSavedCSV(){if(!SAVED.length)return flash('No saved leads');rowsToCSV(SAVED,'profresults_saved_'+today()+'.csv');flash('Exported '+SAVED.length+' saved leads to CSV');}
+function exportSavedCRM(){if(!SAVED.length)return flash('No saved leads');rowsToCRM(SAVED,'profresults_saved_'+today()+'.json');flash('Exported '+SAVED.length+' saved leads as CRM JSON');}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();}
+
+// On load: if you already have qualified leads waiting, drop straight into Call mode.
+if(openLeads().length)switchView('call');
+</script>
+</body>
+</html>
